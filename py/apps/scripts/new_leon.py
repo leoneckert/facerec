@@ -9,7 +9,7 @@ try:
 except ImportError:
     import Image
 
-from facerec.feature import Fisherfaces
+from facerec.feature import Fisherfaces, PCA
 from facerec.classifier import NearestNeighbor
 from facerec.model import PredictableModel
 from facerec.serialization import save_model, load_model
@@ -36,7 +36,7 @@ def read_images(path, sz=None):
     c = 0
     X,y = [], []
     print "\n[+] Reading images from:", path
-    print "\n\t[i] Index-references of subjects:\n"
+    # print "\n\t[i] Index-references of subjects:\n"
 
     names = dict()
 
@@ -61,7 +61,7 @@ def read_images(path, sz=None):
                 except:
                     print "Unexpected error:", sys.exc_info()[0]
                     raise
-            print "\t\t", c, "refers to", subject_name
+            # print "\t\t", c, "refers to", subject_name
             c = c+1
     print names
     return [X,y,names]
@@ -72,7 +72,7 @@ def read_images(path, sz=None):
 def computeAndSaveModel(path_to_database, path_for_model_output, size):
     print "\n[+] Saving new model (confirmed below)."    
     [X,y,names] = read_images(path_to_database, sz=size)
-    model = PredictableModel(Fisherfaces(), NearestNeighbor(), dimensions=size, namesDict=names)
+    model = PredictableModel(PCA(), NearestNeighbor(), dimensions=size, namesDict=names)
     model.compute(X,y)   
     save_model(path_for_model_output, model)
     print "\n[+] Saving confirmed. New model saved to:", path_for_model_output
@@ -103,7 +103,6 @@ def showFisherfaces(model, colormap=None):
             img = Image.fromarray(e)
         else:
             img = Image.fromarray(np.uint8(colormap(e)*255))
-        print model.namesDict[i]
         print "\t[o] Opening Fisherfaces [" + str(i) + "]"
         img.show()
 
@@ -157,30 +156,28 @@ if __name__ == "__main__":
         #     sys.exit()
 
 
-    computeAndSaveModel(path_to_database, 'model.pkl', size=(700,700))
+    # computeAndSaveModel(path_to_database, 'model.pkl', size=(900,900))
 
 
     model = loadModel('model.pkl')
 
-    # im = Image.open(path_to_database)
-    # im = im.convert("L")
-    # im = im.resize(getDimensionsOfModel(model), Image.ANTIALIAS)
-    # img = np.asarray(im, dtype=np.uint8)
-    # print dir(model.feature)
-    # ex = model.feature.extract(img)
-    # re = model.feature.reconstruct(ex)
-    # print re
-
-    # re = re.reshape(getDimensionsOfModel(model))
-    # e = minmax_normalize(re,0,255, dtype=np.uint8)
-
-    # img = Image.fromarray(e)
-    # img.show()
-
-    print model.feature
 
     # predictImages(path_to_database, model)
 
- 
-    showFisherfaces(model, colormap=cm.gray)
+    
+    im = Image.open(path_to_database)
+    im = im.convert("L")
+    im = im.resize(getDimensionsOfModel(model), Image.ANTIALIAS)
+    img = np.asarray(im, dtype=np.uint8)
+    print dir(model.feature)
+    ex = model.feature.extract(img)
+    re = model.feature.reconstruct(ex)
+    print re
+
+    re = re.reshape(getDimensionsOfModel(model))
+    e = minmax_normalize(re,0,255, dtype=np.uint8)
+    img = Image.fromarray(e)
+    img.show()
+
+    # showFisherfaces(model, colormap=cm.gray)
 

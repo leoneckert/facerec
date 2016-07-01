@@ -131,5 +131,5 @@ if __name__ == "__main__":
     print model.predict(img)
 
     
-    # showFisherfaces(model, colormap=cm.gray)
+    showFisherfaces(model, colormap=cm.gray)
 

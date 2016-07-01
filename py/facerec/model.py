@@ -36,4 +36,4 @@ class PredictableModel(object):
         classifier_repr = repr(self.classifier)
         dimensions_repr = repr(self.dimensions)
         namesDict_repr = repr(self.namesDict)
-        return "PredictableModel (feature=%s, classifier=%s, dimensions=%s, namesDict=%s)" % (feature_repr, classifier_repr, dimensions_repr, )
+        return "PredictableModel (feature=%s, classifier=%s, dimensions=%s, namesDict=%s)" % (feature_repr, classifier_repr, dimensions_repr, namesDict_repr)

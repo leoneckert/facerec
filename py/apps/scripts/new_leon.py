@@ -95,20 +95,60 @@ def showFisherfaces(model, colormap=None):
     E = []
     print ""
     for i in xrange(min(model.feature.eigenvectors.shape[1], 20)):
+        print model.feature.eigenvectors[:,i]
         e = model.feature.eigenvectors[:,i].reshape((dimensions))
+
         e = minmax_normalize(e,0,255, dtype=np.uint8)
         if colormap is None:
             img = Image.fromarray(e)
         else:
             img = Image.fromarray(np.uint8(colormap(e)*255))
+        print model.namesDict[i]
         print "\t[o] Opening Fisherfaces [" + str(i) + "]"
         img.show()
+
+def isImage(path):
+    # potentially more sophisticated, checking file format etc.
+    if os.path.isdir(path):
+        return False
+    elif os.path.isfile(path):
+        return True
+
+
+def predictImages(path_to_img_or_folder, model):
+    path = path_to_img_or_folder
+    if isImage(path):
+        image_name = path.split('/')[-1]
+        
+        im = Image.open(path)
+        im = im.convert("L")
+        im = im.resize(getDimensionsOfModel(model))
+        img = np.asarray(im, dtype=np.uint8)
+        pred = model.predict(img)
+        print image_name, " ----> ", pred[1]["name"]
+        print "\tfull path ----> ", path
+        print "\tfull prediction ----> ", pred
+
+    elif os.path.isdir(path):
+        for dirname, dirnames, filenames in os.walk(path):
+
+            print "[+] predictions for images in", dirname
+            for filename in filenames:
+                file_path = os.path.join(dirname, filename)
+
+                try:
+                    predictImages(file_path, model)
+                except:
+                    print "error, maybe no image file?"
+                    pass
+
+    else:
+        print "[-] error. are you sure the path goes either to an image or a folder containing images?"
+
 
 
 
 if __name__ == "__main__":
-
-    
 
     if len(sys.argv) > 1:
         path_to_database = sys.argv[1]
@@ -117,19 +157,30 @@ if __name__ == "__main__":
         #     sys.exit()
 
 
-    # computeAndSaveModel(path_to_database, 'model.pkl', size=(200,200))
+    computeAndSaveModel(path_to_database, 'model.pkl', size=(700,700))
 
 
     model = loadModel('model.pkl')
 
-    print path_to_database
-    im = Image.open(path_to_database)
-    im = im.convert("L")
-    im = im.resize((200,200))
-    img = np.asarray(im, dtype=np.uint8)
+    # im = Image.open(path_to_database)
+    # im = im.convert("L")
+    # im = im.resize(getDimensionsOfModel(model), Image.ANTIALIAS)
+    # img = np.asarray(im, dtype=np.uint8)
+    # print dir(model.feature)
+    # ex = model.feature.extract(img)
+    # re = model.feature.reconstruct(ex)
+    # print re
 
-    print model.predict(img)
+    # re = re.reshape(getDimensionsOfModel(model))
+    # e = minmax_normalize(re,0,255, dtype=np.uint8)
 
-    
+    # img = Image.fromarray(e)
+    # img.show()
+
+    print model.feature
+
+    # predictImages(path_to_database, model)
+
+ 
     showFisherfaces(model, colormap=cm.gray)
 

@@ -201,6 +201,7 @@ class Fisherfaces(AbstractFeature):
         for x in X:
             xp = self.project(x.reshape(-1,1))
             features.append(xp)
+
         return features
 
     def extract(self,X):

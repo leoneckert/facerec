@@ -56,5 +56,5 @@ if __name__ == "__main__":
 		sys.exit()
 	src_dir = sys.argv[1]
 	dst_dir = sys.argv[2]
-	detector = SkinFaceDetector(threshold=0.3, cascade_fn="/home/philipp/projects/opencv2/OpenCV-2.3.1/data/haarcascades/haarcascade_frontalface_alt2.xml")
+	detector = SkinFaceDetector(threshold=0.3, cascade_fn="/HTSLAM/data/opencv/haarcascades/haarcascade_frontalface_alt2.xml")
 	extract_faces(src_dir=src_dir, dst_dir=dst_dir, detector=detector)

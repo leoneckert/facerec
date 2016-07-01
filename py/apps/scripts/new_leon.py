@@ -37,6 +37,9 @@ def read_images(path, sz=None):
     X,y = [], []
     print "\n[+] Reading images from:", path
     print "\n\t[i] Index-references of subjects:\n"
+
+    names = dict()
+
     for dirname, dirnames, filenames in os.walk(path):
         for subdirname in dirnames:
             subject_path = os.path.join(dirname, subdirname)
@@ -51,6 +54,8 @@ def read_images(path, sz=None):
                     X.append(np.asarray(im, dtype=np.uint8))
                     subject_name = subject_path.split("/")[-1]
                     y.append(c)
+                    if c not in names:
+                        names[c] = subject_name
                 except IOError, (errno, strerror):
                     print "I/O error({0}): {1}".format(errno, strerror)
                 except:
@@ -58,15 +63,16 @@ def read_images(path, sz=None):
                     raise
             print "\t\t", c, "refers to", subject_name
             c = c+1
-    return [X,y]
+    print names
+    return [X,y,names]
 
 
 
 
 def computeAndSaveModel(path_to_database, path_for_model_output, size):
     print "\n[+] Saving new model (confirmed below)."    
-    [X,y] = read_images(path_to_database, sz=size)
-    model = PredictableModel(Fisherfaces(), NearestNeighbor(), dimensions=size)
+    [X,y,names] = read_images(path_to_database, sz=size)
+    model = PredictableModel(Fisherfaces(), NearestNeighbor(), dimensions=size, namesDict=names)
     model.compute(X,y)   
     save_model(path_for_model_output, model)
     print "\n[+] Saving confirmed. New model saved to:", path_for_model_output
@@ -106,14 +112,24 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         path_to_database = sys.argv[1]
-        if not os.path.isdir(path_to_database):
-            print "Wrong path to database provided / folder doesn't exist."
-            sys.exit()
+        # if not os.path.isdir(path_to_database):
+        #     print "Wrong path to database provided / folder doesn't exist."
+        #     sys.exit()
 
 
-    computeAndSaveModel(path_to_database, 'model.pkl', size=(700,700))
+    # computeAndSaveModel(path_to_database, 'model.pkl', size=(200,200))
+
 
     model = loadModel('model.pkl')
 
-    showFisherfaces(model, colormap=cm.gray)
+    print path_to_database
+    im = Image.open(path_to_database)
+    im = im.convert("L")
+    im = im.resize((200,200))
+    img = np.asarray(im, dtype=np.uint8)
+
+    print model.predict(img)
+
+    
+    # showFisherfaces(model, colormap=cm.gray)
 

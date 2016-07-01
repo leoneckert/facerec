@@ -8,7 +8,7 @@ from facerec.feature import AbstractFeature
 from facerec.classifier import AbstractClassifier
 
 class PredictableModel(object):
-    def __init__(self, feature, classifier):
+    def __init__(self, feature, classifier, dimensions=None):
         if not isinstance(feature, AbstractFeature):
             raise TypeError("feature must be of type AbstractFeature!")
         if not isinstance(classifier, AbstractClassifier):
@@ -16,6 +16,7 @@ class PredictableModel(object):
         
         self.feature = feature
         self.classifier = classifier
+        self.dimensions = dimensions
     
     def compute(self, X, y):
         features = self.feature.compute(X,y)
@@ -28,4 +29,5 @@ class PredictableModel(object):
     def __repr__(self):
         feature_repr = repr(self.feature)
         classifier_repr = repr(self.classifier)
-        return "PredictableModel (feature=%s, classifier=%s)" % (feature_repr, classifier_repr)
+        dimensions_repr = repr(self.dimensions)
+        return "PredictableModel (feature=%s, classifier=%s, dimensions=%s)" % (feature_repr, classifier_repr, dimensions_repr)

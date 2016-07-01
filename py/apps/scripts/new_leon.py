@@ -69,10 +69,10 @@ def read_images(path, sz=None):
 
 
 
-def computeAndSaveModel(path_to_database, path_for_model_output, size):
+def computeAndSaveModel(path_to_database, path_for_model_output, size, type="Fisherface", num_components=0):
     print "\n[+] Saving new model (confirmed below)."    
     [X,y,names] = read_images(path_to_database, sz=size)
-    model = PredictableModel(PCA(), NearestNeighbor(), dimensions=size, namesDict=names)
+    model = PredictableModel(PCA(num_components=num_components), NearestNeighbor(), dimensions=size, namesDict=names)
     model.compute(X,y)   
     save_model(path_for_model_output, model)
     print "\n[+] Saving confirmed. New model saved to:", path_for_model_output
@@ -155,29 +155,34 @@ if __name__ == "__main__":
         #     print "Wrong path to database provided / folder doesn't exist."
         #     sys.exit()
 
+    for i in range(0,50):
+        n_comp = i*8
+        computeAndSaveModel(path_to_database, 'model.pkl', size=(200,200), type="Eigenface", num_components=n_comp)
 
-    # computeAndSaveModel(path_to_database, 'model.pkl', size=(900,900))
+        
+        
+        # model = loadModel('att_eigen_900_900.pkl')
+
+        model = loadModel('model.pkl')
 
 
-    model = loadModel('model.pkl')
+        # predictImages(path_to_database, model)
 
+        
+        im = Image.open("../../../data/tp_reduced/trevor/_B9A4004.JPG_frame_00000001_out.tiff")
+        im = im.convert("L")
+        im = im.resize(getDimensionsOfModel(model), Image.ANTIALIAS)
+        img = np.asarray(im, dtype=np.uint8)
+        print dir(model.feature)
+        ex = model.feature.extract(img)
+        re = model.feature.reconstruct(ex)
+        print re
 
-    # predictImages(path_to_database, model)
-
-    
-    im = Image.open(path_to_database)
-    im = im.convert("L")
-    im = im.resize(getDimensionsOfModel(model), Image.ANTIALIAS)
-    img = np.asarray(im, dtype=np.uint8)
-    print dir(model.feature)
-    ex = model.feature.extract(img)
-    re = model.feature.reconstruct(ex)
-    print re
-
-    re = re.reshape(getDimensionsOfModel(model))
-    e = minmax_normalize(re,0,255, dtype=np.uint8)
-    img = Image.fromarray(e)
-    img.show()
+        re = re.reshape(getDimensionsOfModel(model))
+        e = minmax_normalize(re,0,255, dtype=np.uint8)
+        img = Image.fromarray(e)
+        img.show()
+        img.save("/HTSLAM/output/Leon/reconstruct_seq/" + str(n_comp) + ".jpg")
 
     # showFisherfaces(model, colormap=cm.gray)
 

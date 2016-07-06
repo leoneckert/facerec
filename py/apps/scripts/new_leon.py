@@ -19,6 +19,32 @@ import matplotlib.cm as cm
 from facerec.util import minmax_normalize
 
 from pprint import pprint
+from random import random
+
+
+def print_progress(count, total=0, label="Progress:"):
+    '''
+    prints progress on the same line.
+    req: import sys
+    '''
+    if total is 0:
+        to_print =  "\r" + label + str(count).rjust(len(str(count))+1)
+    elif total > 0:
+        
+        loadingbar_length = 40
+        num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
+        loadingbar = "|".rjust(3) +"|"*num_bars+"|".rjust(loadingbar_length - num_bars + 1)
+
+        percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
+
+        count_vs_total = str(count).rjust(len(str(total))+1) + "/" + str(total) 
+        
+        to_print =  "\r" + label + count_vs_total + loadingbar + percentage
+
+    sys.stdout.write(to_print)
+    sys.stdout.flush()
+def stop_print_progress():
+    print ""  
 
 def read_images(path, sz=None):
     """Reads the images in a given folder, resizes images on the fly if size is given.
@@ -69,13 +95,13 @@ def read_images(path, sz=None):
 
 
 
-def computeAndSaveModel(path_to_database, path_for_model_output, size, model_type="Fisherface", num_components=0):
+def computeAndSaveModel(path_to_database, path_for_model_output, size, model_type="Fisherface", num_components=0, classifier_neighbours=1):
     print "\n[+] Saving new model (confirmed below)."    
     [X,y,names] = read_images(path_to_database, sz=size)
     if model_type == "Eigenface":
-        model = PredictableModel(PCA(num_components=num_components), NearestNeighbor(), dimensions=size, namesDict=names)
+        model = PredictableModel(PCA(num_components=num_components), NearestNeighbor(k=classifier_neighbours), dimensions=size, namesDict=names)
     elif model_type == "Fisherface":
-        model = PredictableModel(Fisherfaces(num_components=num_components), NearestNeighbor(), dimensions=size, namesDict=names)
+        model = PredictableModel(Fisherfaces(num_components=num_components), NearestNeighbor(k=classifier_neighbours), dimensions=size, namesDict=names)
     else:
         print "[-] specify the type of model you want to comput as either 'Fisherface' or 'Eigenface' in the computeAndSaveModel function."
         return False
@@ -134,7 +160,7 @@ def predictImages(path_to_img_or_folder, model):
         print image_name, " ----> ", pred[1]["name"]
         print "\tfull path ----> ", path
         print "\tfull prediction ----> ", pred
-
+        im.show()
     elif os.path.isdir(path):
         for dirname, dirnames, filenames in os.walk(path):
 
@@ -150,6 +176,82 @@ def predictImages(path_to_img_or_folder, model):
 
     else:
         print "[-] error. are you sure the path goes either to an image or a folder containing images?"
+
+def predictOptimize(path_to_img_or_folder, model, size):
+    path = path_to_img_or_folder
+    
+    im = Image.open(path)
+    im = im.convert("L")
+    im = im.resize(getDimensionsOfModel(model))
+
+    pix = im.load()
+    # start by setting all pixels blank:
+    for i in range(getDimensionsOfModel(model)[0]):
+        for j in range(getDimensionsOfModel(model)[1]):
+            pix[i,j] = 255
+
+    out_path = '/HTSLAM/output/Leon/noise_to_face/ntf_test_'
+    c = 0
+    new_path = out_path + str(c)
+    while os.path.isdir(new_path):
+        c += 1
+        new_path = out_path + str(c)
+    os.mkdir(new_path)
+
+    
+    
+    time_factor = 1 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 1 # defines how many pixels the size of rectangle increases in each step
+
+    current_distance = 100000000
+
+    for length_fraction in range(size/length_interval):
+
+        length_n = length_fraction * length_interval
+
+        length = (size+1) - length_n # current length
+        t = 0
+
+        loops_per_size = ((1+length_n)*(1+length_n))/time_factor
+        
+        for i, times in enumerate( range(loops_per_size), 1):
+            t = times
+            print_progress(i, loops_per_size, "[+] "+str(length_n + 1)+"/"+str(size) +" - Currently optimizing rectangels with size 0-" + str(length) + ":")
+
+
+            
+            w = int(random()*length)
+            h = int(random()*length)
+            ran_x = int(random()*(size-w))
+            ran_y = int(random()*(size-h))
+            
+            mini = 100000000
+            mini_b = -5
+            for b in range(255):
+
+                for i in range(ran_x, ran_x+w):
+                    for j in range(ran_y, ran_y+h):
+
+                        pix[i,j] = b
+
+                img = np.asarray(im, dtype=np.uint8)
+                pred = model.predict(img)
+
+                dist = pred[1]['distances'][0]
+                if dist < mini:
+                    mini = dist
+                    mini_b = b
+
+            current_distance = mini
+            for i in range(ran_x, ran_x+w):
+                for j in range(ran_y, ran_y+h):
+                    pix[i,j] = mini_b
+
+        # im.show()
+        print "\t-current distance:", current_distance
+        # stop_print_progress()
+        im.save(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg")
+
 
 
 def reconstructFaceFromModel(path_to_input_image, model, save_path = None):
@@ -167,6 +269,12 @@ def reconstructFaceFromModel(path_to_input_image, model, save_path = None):
     else:
         img.save(save_path)
 
+def path_file_from(path_to_database):
+    for dirname, dirnames, filenames in os.walk(path_to_database):
+        for subdirname in dirnames:
+            subject_path = os.path.join(dirname, subdirname)
+            for filename in os.listdir(subject_path):
+                return os.path.join(subject_path, filename)
 
 if __name__ == "__main__":
 
@@ -176,17 +284,21 @@ if __name__ == "__main__":
         #     print "Wrong path to database provided / folder doesn't exist."
         #     sys.exit()
 
+        size = 30
 
-        # computeAndSaveModel(path_to_database, 'model.pkl', size=(300,300), model_type="Eigenface", num_components=0)
+        computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
+        file_path = path_file_from(path_to_database)
 
-        model = loadModel('model_cohn_kanade_300_300.pkl')
+        model = loadModel('model.pkl')
+
 
 
         # predictImages(path_to_database, model)
+        predictOptimize(file_path, model, size)
 
         # trevor_face = "../../../../facerec/data/tp_aligned_cropped/tiff/_B9A3986.JPG_frame_00000001_out.tiff"
-        reconstructFaceFromModel("/HTSLAM/input/Leon/face_dataset/ck_formatted/S011/S011-105.tiff", model)
+        # reconstructFaceFromModel("/HTSLAM/input/Leon/face_dataset/ck_formatted/S011/S011-105.tiff", model)
 
         # showModel(model, colormap=cm.gray)
 

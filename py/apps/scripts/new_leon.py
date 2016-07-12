@@ -20,7 +20,9 @@ from facerec.util import minmax_normalize
 
 from pprint import pprint
 from random import random
+from time import time
 
+import cv2
 
 def print_progress(count, total=0, label="Progress:"):
     '''
@@ -33,7 +35,7 @@ def print_progress(count, total=0, label="Progress:"):
         
         loadingbar_length = 40
         num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
-        loadingbar = "|".rjust(3) +"|"*num_bars+"|".rjust(loadingbar_length - num_bars + 1)
+        loadingbar = "|".rjust(3) +"="*num_bars+">"+"|".rjust(loadingbar_length - num_bars + 1)
 
         percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
 
@@ -155,6 +157,11 @@ def predictImages(path_to_img_or_folder, model):
         im = Image.open(path)
         im = im.convert("L")
         im = im.resize(getDimensionsOfModel(model))
+
+
+       
+
+
         img = np.asarray(im, dtype=np.uint8)
         pred = model.predict(img)
         print image_name, " ----> ", pred[1]["name"]
@@ -177,19 +184,9 @@ def predictImages(path_to_img_or_folder, model):
     else:
         print "[-] error. are you sure the path goes either to an image or a folder containing images?"
 
-def predictOptimize(path_to_img_or_folder, model, size):
+def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
     path = path_to_img_or_folder
     
-    im = Image.open(path)
-    im = im.convert("L")
-    im = im.resize(getDimensionsOfModel(model))
-
-    pix = im.load()
-    # start by setting all pixels blank:
-    for i in range(getDimensionsOfModel(model)[0]):
-        for j in range(getDimensionsOfModel(model)[1]):
-            pix[i,j] = 255
-
     out_path = '/HTSLAM/output/Leon/noise_to_face/ntf_test_'
     c = 0
     new_path = out_path + str(c)
@@ -198,13 +195,72 @@ def predictOptimize(path_to_img_or_folder, model, size):
         new_path = out_path + str(c)
     os.mkdir(new_path)
 
+
+
+
+    im = Image.open(path)
+    im = im.convert("L")
+    im = im.resize(getDimensionsOfModel(model))
+
+
+
+    im.save(new_path + "/from_orig_db.jpg")
+
+    pix = im.load()
+    # start by setting all pixels blank:
+    for i in range(getDimensionsOfModel(model)[0]):
+        for j in range(getDimensionsOfModel(model)[1]):
+            pix[i,j] = 255
+
+    
+
     
     
-    time_factor = 1 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
-    length_interval = 1 # defines how many pixels the size of rectangle increases in each step
+    time_factor = 7 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
 
     current_distance = 100000000
 
+
+    pixel_analysed = 0
+    num_predictions = 0
+    pixel_drawn = 0
+    l_count = 0
+    totaldraw = 0
+    totalanalysed = 0
+    totalpred = 0
+    for i in range(size/length_interval):
+        loops_per_size = ((1+i*length_interval)*(1+i*length_interval))/time_factor
+        numpredictions = loops_per_size * 255
+        pixel_drawn = (((size+1)-(i*length_interval))*((size+1)-(i*length_interval)))*loops_per_size
+        pixel_analysed = pixel_drawn*255
+        
+        totaldraw += pixel_drawn
+        totalanalysed += pixel_analysed
+        totalpred += numpredictions
+    
+    loop_secs = float(size/length_interval) * 0.205318021774
+    print "total loops:", i, loop_secs, "seconds"   
+    
+    draw_secs = float(totaldraw) * 2.25419623148e-07
+    print "total pixels drawn:", totaldraw, draw_secs, "seconds"
+    
+    analyse_secs = float(totalanalysed) * 2.25419623148e-07
+    print "total pixels analysed:", totalanalysed, analyse_secs, "seconds"
+    
+    pred_secs = float(totalpred) * 0.00122822872827
+    print "total pixels predicted:", totalpred, pred_secs, "seconds" # maybe rather 0.000788020398718
+
+    pred_time_total = loop_secs + draw_secs + analyse_secs + pred_secs
+    print "predicted time:", pred_time_total, "seconds"
+    print "\t\t", pred_time_total/60.0, 'minutes'
+
+    # testiing predicions: 
+    # time_factor = 7 length_interval = 2, size = 30, predicted = 207.208512531, actual = 131.811971188
+    # time_factor = 2 length_interval = 1, size = 30, predicted = 1516.3374941,  actual = 967.648044109
+    # time_factor = 2300 length_interval = 40, size = 700, predicted = 3802.77635559, actual = 
+    img = np.asarray(im, dtype=np.uint8)
+    timepre = time()
     for length_fraction in range(size/length_interval):
 
         length_n = length_fraction * length_interval
@@ -213,28 +269,32 @@ def predictOptimize(path_to_img_or_folder, model, size):
         t = 0
 
         loops_per_size = ((1+length_n)*(1+length_n))/time_factor
-        
+        num_predictions = 0
         for i, times in enumerate( range(loops_per_size), 1):
             t = times
             print_progress(i, loops_per_size, "[+] "+str(length_n + 1)+"/"+str(size) +" - Currently optimizing rectangels with size 0-" + str(length) + ":")
-
-
-            
+ 
             w = int(random()*length)
             h = int(random()*length)
             ran_x = int(random()*(size-w))
             ran_y = int(random()*(size-h))
+            rect_start = (ran_x,ran_y)
+            rect_end = (ran_x+w,ran_y+h)
+            # w = int(length)
+            # h = int(length)
+            # ran_x = int((size-w))
+            # ran_y = int((size-h))
             
             mini = 100000000
             mini_b = -5
             for b in range(255):
 
-                for i in range(ran_x, ran_x+w):
-                    for j in range(ran_y, ran_y+h):
+                # for i in range(ran_x, ran_x+w):
+                #     for j in range(ran_y, ran_y+h):
+                        
+                #         pix[i,j] = b
+                cv2.rectangle(img, rect_start, rect_end, b, -1)
 
-                        pix[i,j] = b
-
-                img = np.asarray(im, dtype=np.uint8)
                 pred = model.predict(img)
 
                 dist = pred[1]['distances'][0]
@@ -243,15 +303,19 @@ def predictOptimize(path_to_img_or_folder, model, size):
                     mini_b = b
 
             current_distance = mini
-            for i in range(ran_x, ran_x+w):
-                for j in range(ran_y, ran_y+h):
-                    pix[i,j] = mini_b
+            # for i in range(ran_x, ran_x+w):
+            #     for j in range(ran_y, ran_y+h):
+            #         pix[i,j] = mini_b
+            cv2.rectangle(img, rect_start, rect_end, b, -1)
 
-        # im.show()
-        print "\t-current distance:", current_distance
+        
+        print l_count, "\t-current distance:", current_distance
         # stop_print_progress()
-        im.save(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg")
 
+        # img.save(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg")
+        cv2.imwrite(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg", img)
+    print "total time:", time() - timepre, "seconds"
+        
 
 
 def reconstructFaceFromModel(path_to_input_image, model, save_path = None):
@@ -292,7 +356,7 @@ if __name__ == "__main__":
 
         model = loadModel('model.pkl')
 
-
+        # showModel(model, colormap=cm.gray)
 
         # predictImages(path_to_database, model)
         predictOptimize(file_path, model, size)
@@ -328,3 +392,37 @@ if __name__ == "__main__":
 
     #     # showModel(model, colormap=cm.gray)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+prediction optimisation thoughts:
+
+___________
+Eigenfaces:
+
+when constructing a eigenface model using only two input images, the calculation is much faster, but what's more interesting is
+that the distance is small from the start, then very small, very quickly and then hardly improving/more arbitrary.
+
+when using many input photos to construct a 'larger' eigenface model, computation is slower, 
+but the distances have more space to actually improve - seems more reliable, the look seems to actually *matter* with this method.
+
+____________
+Fisherfaces:
+
+FIsherface not so much explored yet. One way I can think if is to check WHO is predicted and then, if the WHO is
+the target, how low the distance. If, for no value the target is predicted, don't draw the rectangle.
+
+"""

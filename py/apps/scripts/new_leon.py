@@ -212,13 +212,8 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
         for j in range(getDimensionsOfModel(model)[1]):
             pix[i,j] = 255
 
-    
-
-    
-    
-    time_factor = 7 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
-    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
-
+    time_factor = 1000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 10 # defines how many pixels the size of rectangle increases in each step
     current_distance = 100000000
 
 
@@ -280,19 +275,11 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
             ran_y = int(random()*(size-h))
             rect_start = (ran_x,ran_y)
             rect_end = (ran_x+w,ran_y+h)
-            # w = int(length)
-            # h = int(length)
-            # ran_x = int((size-w))
-            # ran_y = int((size-h))
-            
+
             mini = 100000000
             mini_b = -5
             for b in range(255):
 
-                # for i in range(ran_x, ran_x+w):
-                #     for j in range(ran_y, ran_y+h):
-                        
-                #         pix[i,j] = b
                 cv2.rectangle(img, rect_start, rect_end, b, -1)
 
                 pred = model.predict(img)
@@ -303,17 +290,13 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
                     mini_b = b
 
             current_distance = mini
-            # for i in range(ran_x, ran_x+w):
-            #     for j in range(ran_y, ran_y+h):
-            #         pix[i,j] = mini_b
-            cv2.rectangle(img, rect_start, rect_end, b, -1)
+
+            cv2.rectangle(img, rect_start, rect_end, mini_b, -1)
 
         
-        print l_count, "\t-current distance:", current_distance
-        # stop_print_progress()
-
-        # img.save(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg")
+        print "\t-current distance:", current_distance
         cv2.imwrite(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg", img)
+    
     print "total time:", time() - timepre, "seconds"
         
 
@@ -348,7 +331,7 @@ if __name__ == "__main__":
         #     print "Wrong path to database provided / folder doesn't exist."
         #     sys.exit()
 
-        size = 30
+        size = 700
 
         computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 

@@ -20,11 +20,14 @@ from facerec.util import minmax_normalize
 
 from pprint import pprint
 from random import random
-from time import time
+from datetime import datetime
+import time
+
+
 
 import cv2
 
-def print_progress(count, total=0, label="Progress:"):
+def print_progress(count, total=0, label="Progress:", _loadingbar_length = 40):
     '''
     prints progress on the same line.
     req: import sys
@@ -33,13 +36,16 @@ def print_progress(count, total=0, label="Progress:"):
         to_print =  "\r" + label + str(count).rjust(len(str(count))+1)
     elif total > 0:
         
-        loadingbar_length = 40
+        loadingbar_length = _loadingbar_length
+        
         num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
+
         # loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else ("|X|".rjust(loadingbar_length - num_bars + 3))      )
         the_x = '|' + '\x1b[%sm%s\x1b[0m' % ('0;32;40', 'X') + '|'
         loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else (the_x.rjust(loadingbar_length - num_bars + 3))      )
-        percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
 
+        percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
+        
         count_vs_total = str(count).rjust(len(str(total))+1) + "/" + str(total) 
         
         to_print =  "\r" + label + count_vs_total + loadingbar + percentage
@@ -48,6 +54,8 @@ def print_progress(count, total=0, label="Progress:"):
     sys.stdout.flush()
 def stop_print_progress():
     print ""  
+
+
 
 def read_images(path, sz=None):
     """Reads the images in a given folder, resizes images on the fly if size is given.
@@ -97,7 +105,6 @@ def read_images(path, sz=None):
 
 
 
-
 def computeAndSaveModel(path_to_database, path_for_model_output, size, model_type="Fisherface", num_components=0, classifier_neighbours=1):
     print "\n[+] Saving new model (confirmed below)."    
     [X,y,names] = read_images(path_to_database, sz=size)
@@ -116,7 +123,6 @@ def computeAndSaveModel(path_to_database, path_for_model_output, size, model_typ
 def loadModel(path_to_model):
     print "\n[+] Loading model from:", path_to_model
     return load_model(path_to_model)
-
 
 def getDimensionsOfModel(model):
      return model.dimensions
@@ -148,7 +154,6 @@ def isImage(path):
         return False
     elif os.path.isfile(path):
         return True
-
 
 def predictImages(path_to_img_or_folder, model):
     path = path_to_img_or_folder
@@ -185,43 +190,15 @@ def predictImages(path_to_img_or_folder, model):
     else:
         print "[-] error. are you sure the path goes either to an image or a folder containing images?"
 
-def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
-    path = path_to_img_or_folder
-    
-    out_path = '/HTSLAM/output/Leon/noise_to_face/ntf_test_'
-    c = 0
-    new_path = out_path + str(c)
-    while os.path.isdir(new_path):
-        c += 1
-        new_path = out_path + str(c)
-    os.mkdir(new_path)
 
 
 
-
-    im = Image.open(path)
-    im = im.convert("L")
-    im = im.resize(getDimensionsOfModel(model))
-
-
-
-    im.save(new_path + "/from_orig_db.jpg")
-
-    pix = im.load()
-    # start by setting all pixels blank:
-    for i in range(getDimensionsOfModel(model)[0]):
-        for j in range(getDimensionsOfModel(model)[1]):
-            pix[i,j] = 255
-
-    time_factor = 8000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
-    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
-    current_distance = 100000000
-
+def make_rough_time_prediction(size, time_factor, length_interval):
+    # MAKE A ROUCH TIME PREDICTION
 
     pixel_analysed = 0
     num_predictions = 0
     pixel_drawn = 0
-    l_count = 0
     totaldraw = 0
     totalanalysed = 0
     totalpred = 0
@@ -251,15 +228,55 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
     print "predicted time:", pred_time_total, "seconds"
     print "\t\t", pred_time_total/60.0, 'minutes'
 
+
+def predictOptimize(path_to_img_or_folder, model, size):
+    # preparing OUTPUT location:
+    today = str(datetime.fromtimestamp(int(time.time())).strftime('%Y%m%d'))
+    out_path = '/HTSLAM/output/Leon/noise_to_face/'+today+'/ntf_test_'+today+'_'
+    c = 0
+    new_path = out_path + str(c)
+    while os.path.isdir(new_path):
+        c += 1
+        new_path = out_path + str(c)
+    os.makedirs(new_path)
+
+    # getting INPUT image:
+    path = path_to_img_or_folder
+
+    im = Image.open(path)
+    im = im.convert("L")
+    im = im.resize(getDimensionsOfModel(model))
+
+    #saving a copy of one of the original image to compare:
+    im.save(new_path + "/from_orig_db.jpg")
+
+    # turn image into numpy array
+    img = np.asarray(im, dtype=np.uint8)
+
+    # setting a input image to be a blank canvas (of the same size)
+    pix = im.load()
+    # start by setting all pixels blank:
+    for i in range(getDimensionsOfModel(model)[0]):
+        for j in range(getDimensionsOfModel(model)[1]):
+            pix[i,j] = 255
+
+    time_factor = 50000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
+    
+
+
+    make_rough_time_prediction(size, time_factor, length_interval)
     # testiing predicions: 
     # time_factor = 7 length_interval = 2, size = 30, predicted = 207.208512531, actual = 131.811971188
     # time_factor = 2 length_interval = 1, size = 30, predicted = 1516.3374941,  actual = 967.648044109
     # time_factor = 1000 length_interval = 10, size = 700, predicted = 36000.228859, actual = 21932.0193892
     # time_factor = 50000 length_interval = 2, size = 700, predicted = 2571.9817542, actual = 1999.86883903
+    # time_factor = 1000 length_interval = 10, size = 700, predicted = 36000.228859, actual = 21932.0193892 
 
 
-    img = np.asarray(im, dtype=np.uint8)
     timepre = time()
+
+    current_distance = 100000000
     for length_fraction in range(size/length_interval):
 
         length_n = length_fraction * length_interval

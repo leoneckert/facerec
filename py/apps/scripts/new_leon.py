@@ -35,7 +35,7 @@ def print_progress(count, total=0, label="Progress:"):
         
         loadingbar_length = 40
         num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
-        loadingbar = "|".rjust(3) +"="*num_bars+">"+"|".rjust(loadingbar_length - num_bars + 1)
+        loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else ("|X|".rjust(loadingbar_length - num_bars + 3))      )
 
         percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
 
@@ -212,8 +212,8 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
         for j in range(getDimensionsOfModel(model)[1]):
             pix[i,j] = 255
 
-    time_factor = 1000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
-    length_interval = 10 # defines how many pixels the size of rectangle increases in each step
+    time_factor = 50000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
     current_distance = 100000000
 
 
@@ -253,7 +253,7 @@ def predictOptimize(path_to_img_or_folder, model, size, predictTime = False):
     # testiing predicions: 
     # time_factor = 7 length_interval = 2, size = 30, predicted = 207.208512531, actual = 131.811971188
     # time_factor = 2 length_interval = 1, size = 30, predicted = 1516.3374941,  actual = 967.648044109
-    # time_factor = 2300 length_interval = 40, size = 700, predicted = 3802.77635559, actual = 
+    # time_factor = 1000 length_interval = 10, size = 700, predicted = 36000.228859, actual = 21932.0193892 
     img = np.asarray(im, dtype=np.uint8)
     timepre = time()
     for length_fraction in range(size/length_interval):

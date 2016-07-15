@@ -29,8 +29,8 @@ import argparse
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-b", "--build-model", required=False, default=None, help="Path to output file.")
-ap.add_argument("-i", "--input", required=True, help="Path to the image folder of correct structure.")
-ap.add_argument('-o','--output', required=True, help="Path to folder to store output model file.")
+ap.add_argument("-i", "--input", required=False, help="Path to the image folder of correct structure.")
+ap.add_argument('-o','--output', required=False, help="Path to folder to store output model file.")
 ap.add_argument("-w", "--width",required=False, default=500, type=int, help="downsizes the images before building the model.")
 ap.add_argument("-c", "--components",required=False, default=0, type=int, help="number of components (for Eigenfaces (also in Fisherfaces(?). Defaults to maximum.")
 opts = vars(ap.parse_args())

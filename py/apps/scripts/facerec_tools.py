@@ -135,7 +135,7 @@ if __name__ == "__main__":
             print "[+] Buidling a", model_type, "model."
 
 
-            computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
+            # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

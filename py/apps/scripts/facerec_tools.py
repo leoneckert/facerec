@@ -28,7 +28,7 @@ import cv2
 import argparse
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-b", "--build-model", required=False, default="Eigenface", help="Path to output file.")
+ap.add_argument("-b", "--build-model", required=False, default=None, help="Path to output file.")
 ap.add_argument("-i", "--input", required=True, help="Path to the image folder of correct structure.")
 ap.add_argument('-o','--output', required=True, help="Path to folder to store output model file.")
 ap.add_argument("-w", "--width",required=False, default=500, type=int, help="downsizes the images before building the model.")
@@ -120,6 +120,9 @@ def predictImages(path_to_img_or_folder, model):
 if __name__ == "__main__":
 
     print opts
+    print opts["build_model"]
+
+
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

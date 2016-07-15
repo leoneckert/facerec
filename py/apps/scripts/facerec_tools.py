@@ -128,18 +128,30 @@ if __name__ == "__main__":
             model_type = opts["build_model"]
             output_path = opts["output"]
             input_path = opts["input"]
+            if not os.path.isdir(input_path):
+                print "[+] Input directory seems to NOT EXIST:", output_path
+                print "[X] Exiting."
+                sys.exit()
+                # os.makedirs(output_path)
+
+            if output_path.endswith(".pkl"):
+                output_file_name = output_path.split("/")[-1]
+                output_path = "/".join(output_path.split("/")[:-1])
+            else:
+                output_file_name = "model.plk"
+
+
             if not os.path.isdir(output_path):
-                "[+] Creating directories:", output_path
+                print "[+] Creating directories:", output_path
                 os.makedirs(output_path)
 
 
             print "[+] Building a", model_type, "model."
             print '\toutput_path:', output_path
+            print '\toutput_file_name:', output_file_name
             print '\tinput_path:', input_path
 
-
-
-            # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
+            # computeAndSaveModel(input_path, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

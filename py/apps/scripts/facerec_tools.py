@@ -123,7 +123,7 @@ if __name__ == "__main__":
     print opts["build_model"]
 
     if opts["build_model"] is not None:
-        if opts["build_model"] is "Eigenfaces" or opts["build_model"] is "Fisherfaces":
+        if opts["build_model"] == "Eigenfaces" or opts["build_model"] == "Fisherfaces":
             
             model_type = opts["build_model"]
             output_path = opts["output"]

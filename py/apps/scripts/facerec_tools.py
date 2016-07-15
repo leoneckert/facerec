@@ -33,6 +33,8 @@ ap.add_argument("-i", "--input", required=False, help="Path to the image folder 
 ap.add_argument('-o','--output', required=False, help="Path to folder to store output model file.")
 ap.add_argument("-w", "--width",required=False, default=500, type=int, help="downsizes the images before building the model.")
 ap.add_argument("-c", "--components",required=False, default=0, type=int, help="number of components (for Eigenfaces (also in Fisherfaces(?). Defaults to maximum.")
+ap.add_argument("-n", "--classifier-neigbours",required=False, default=1, type=int, help="this is relevant to how the predictions based on the model are returned (more detailed explanation somewhere else).")
+
 opts = vars(ap.parse_args())
 
 
@@ -128,11 +130,20 @@ if __name__ == "__main__":
             model_type = opts["build_model"]
             output_path = opts["output"]
             input_path = opts["input"]
+
+            num_components = opts["num_components"]
+            classifier_neigbours = opts["classifier_neigbours"]
+
             if not os.path.isdir(input_path):
                 print "[+] Input directory seems to NOT EXIST:", output_path
                 print "[X] Exiting."
                 sys.exit()
                 # os.makedirs(output_path)
+
+
+            #this needs to be resolved (getting the actual dimension of the images and add warning that all images need to have the same dimensions)
+            width = opts["widht"]
+            height = opts["height"]
 
             if output_path.endswith(".pkl"):
                 output_file_name = output_path.split("/")[-1]
@@ -145,11 +156,17 @@ if __name__ == "__main__":
                 print "[+] Creating directories:", output_path
                 os.makedirs(output_path)
 
+            output_path = os.path.join(output_path, output_file_name)
 
             print "[+] Building a", model_type, "model."
             print '\toutput_path:', output_path
-            print '\toutput_file_name:', output_file_name
             print '\tinput_path:', input_path
+
+            print '\tcomponents', num_components
+            print '\tclassifier_neigbours', classifier_neigbours
+            print '\tdimensions', width, "x", height
+
+
 
             # computeAndSaveModel(input_path, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 

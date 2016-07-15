@@ -127,12 +127,16 @@ if __name__ == "__main__":
             
             model_type = opts["build_model"]
             output_path = opts["output"]
+            input_path = opts["input"]
             if not os.path.isdir(output_path):
                 "[+] Creating directories:", output_path
                 os.makedirs(output_path)
 
 
-            print "[+] Buidling a", model_type, "model."
+            print "[+] Building a", model_type, "model."
+            print '\toutput_path:', output_path
+            print '\tinput_path:', input_path
+
 
 
             # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)

@@ -124,10 +124,18 @@ if __name__ == "__main__":
 
     if opts["build_model"] is not None:
         if opts["build_model"] is "Eigenfaces" or opts["build_model"] is "Fisherfaces":
+            
             model_type = opts["build_model"]
+            output_path = opts["output"]
+            if not os.isdir(output_path):
+                "[+] Creating directories:", output_path
+                os.makedirs(output_path)
+
+
             print "[+] Buidling a", model_type, "model."
 
-        # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
+
+            computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

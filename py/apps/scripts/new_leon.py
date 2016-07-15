@@ -41,8 +41,12 @@ def print_progress(count, total=0, label="Progress:", _loadingbar_length = 40):
         num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
 
         # loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else ("|X|".rjust(loadingbar_length - num_bars + 3))      )
-        the_x = '|' + '\x1b[%sm%s\x1b[0m' % ('0;32;40', 'X') + '|'
-        loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else (the_x.rjust(loadingbar_length - num_bars + 3))      )
+        # the_x = '|' + '\x1b[%sm%s\x1b[0m' % ('0;32;40', 'X') + '|'
+        the_x = '|X|'
+        ran_color = str( 31 + int(random()*6))
+        the_arrow = '\x1b[%sm%s\x1b[0m' % ('0;'+ran_color+';40', '>')
+        
+        loadingbar = "|".rjust(3) +"="*num_bars+the_arrow+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else (the_x.rjust(loadingbar_length - num_bars + 3))      )
 
         percentage = str(float(count)/float(total)*100)[:6].rjust(7) + "%" 
         
@@ -164,10 +168,6 @@ def predictImages(path_to_img_or_folder, model):
         im = im.convert("L")
         im = im.resize(getDimensionsOfModel(model))
 
-
-       
-
-
         img = np.asarray(im, dtype=np.uint8)
         pred = model.predict(img)
         print image_name, " ----> ", pred[1]["name"]
@@ -213,21 +213,22 @@ def make_rough_time_prediction(size, time_factor, length_interval):
         totalpred += numpredictions
     
     loop_secs = float(size/length_interval) * 0.205318021774
-    print "total loops:", i, loop_secs, "seconds"   
+    # print "total loops:", i, loop_secs, "seconds"   
     
     draw_secs = float(totaldraw) * 2.25419623148e-07
-    print "total pixels drawn:", totaldraw, draw_secs, "seconds"
+    # print "total pixels drawn:", totaldraw, draw_secs, "seconds"
     
     analyse_secs = float(totalanalysed) * 2.25419623148e-07
-    print "total pixels analysed:", totalanalysed, analyse_secs, "seconds"
+    # print "total pixels analysed:", totalanalysed, analyse_secs, "seconds"
     
     pred_secs = float(totalpred) * 0.00122822872827
-    print "total pixels predicted:", totalpred, pred_secs, "seconds" # maybe rather 0.000788020398718
+    # print "total pixels predicted:", totalpred, pred_secs, "seconds" # maybe rather 0.000788020398718
 
     pred_time_total = loop_secs + draw_secs + analyse_secs + pred_secs
     print "predicted time:", pred_time_total, "seconds"
-    print "\t\t", pred_time_total/60.0, 'minutes'
-
+    print "\t\tor", pred_time_total/60.0, 'minutes'
+    print "\t\tor", pred_time_total/60.0/60, 'hours'
+    print "\t\tor less"
 
 def predictOptimize(path_to_img_or_folder, model, size):
     # preparing OUTPUT location:
@@ -250,9 +251,6 @@ def predictOptimize(path_to_img_or_folder, model, size):
     #saving a copy of one of the original image to compare:
     im.save(new_path + "/from_orig_db.jpg")
 
-    # turn image into numpy array
-    img = np.asarray(im, dtype=np.uint8)
-
     # setting a input image to be a blank canvas (of the same size)
     pix = im.load()
     # start by setting all pixels blank:
@@ -260,12 +258,13 @@ def predictOptimize(path_to_img_or_folder, model, size):
         for j in range(getDimensionsOfModel(model)[1]):
             pix[i,j] = 255
 
-    time_factor = 50000 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
-    length_interval = 2 # defines how many pixels the size of rectangle increases in each step
+    # turn image into numpy array
+    img = np.asarray(im, dtype=np.uint8)
+
+    time_factor = 2500 # the smaller the more rectangles for each size (always exponentially more for the smaller they get)
+    length_interval = 1 # defines how many pixels the size of rectangle increases in each step
     
-
-
-    make_rough_time_prediction(size, time_factor, length_interval)
+    make_rough_time_prediction(size, time_factor, length_interval) # (almost) outdated by noe, nut it does not get longer than this at least.
     # testiing predicions: 
     # time_factor = 7 length_interval = 2, size = 30, predicted = 207.208512531, actual = 131.811971188
     # time_factor = 2 length_interval = 1, size = 30, predicted = 1516.3374941,  actual = 967.648044109
@@ -273,52 +272,68 @@ def predictOptimize(path_to_img_or_folder, model, size):
     # time_factor = 50000 length_interval = 2, size = 700, predicted = 2571.9817542, actual = 1999.86883903
     # time_factor = 1000 length_interval = 10, size = 700, predicted = 36000.228859, actual = 21932.0193892 
 
-
-    timepre = time()
+    # actually measure runtime to see the difference in the end.
+    timepre = time.time()
 
     current_distance = 100000000
-    for length_fraction in range(size/length_interval):
+    steps = (size/length_interval)
+    every = 11
+    count = 0
+    for length_fraction in range(steps):
 
-        length_n = length_fraction * length_interval
 
-        length = (size+1) - length_n # current length
-        t = 0
+        if length_fraction % (steps/10) == 0:
+            every -= 1
+            print "\n[+] from here, I compute every", every, "loop.\n"
 
-        loops_per_size = ((1+length_n)*(1+length_n))/time_factor
-        num_predictions = 0
-        for i, times in enumerate( range(loops_per_size), 1):
-            t = times
-            print_progress(i, loops_per_size, "[+] "+str(length_n + 1)+"/"+str(size) +" - Currently optimizing rectangels with size 0-" + str(length) + ":")
- 
-            w = int(random()*length)
-            h = int(random()*length)
-            ran_x = int(random()*(size-w))
-            ran_y = int(random()*(size-h))
-            rect_start = (ran_x,ran_y)
-            rect_end = (ran_x+w,ran_y+h)
+        count += 1
 
-            mini = 100000000
-            mini_b = -5
-            for b in range(255):
+        if count >= every:
 
-                cv2.rectangle(img, rect_start, rect_end, b, -1)
+            count = 0
 
-                pred = model.predict(img)
 
-                dist = pred[1]['distances'][0]
-                if dist < mini:
-                    mini = dist
-                    mini_b = b
+            length_n = length_fraction * length_interval
 
-            current_distance = mini
+            length = (size+1) - length_n # current length
+            t = 0
 
-            cv2.rectangle(img, rect_start, rect_end, mini_b, -1)
+            loops_per_size = ((1+length_n)*(1+length_n))/time_factor
+            num_predictions = 0
+            for i, times in enumerate( range(loops_per_size), 1):
+                t = times
+                print_progress(i, loops_per_size, "[+] "+str(length_n + 1)+"/"+str(size) +" - Optimizing rectangels w/ size 0-" + str(length) + ":")
+     
+                w = int(random()*length)
+                h = int(random()*length)
+                ran_x = int(random()*(size-w))
+                ran_y = int(random()*(size-h))
+                rect_start = (ran_x,ran_y)
+                rect_end = (ran_x+w,ran_y+h)
+
+                mini = 100000000
+                mini_b = -5
+                for b in range(255):
+
+                    cv2.rectangle(img, rect_start, rect_end, b, -1)
+
+                    pred = model.predict(img)
+
+                    dist = pred[1]['distances'][0]
+                    if dist < mini:
+                        mini = dist
+                        mini_b = b
+
+                current_distance = mini
+
+                cv2.rectangle(img, rect_start, rect_end, mini_b, -1)
 
         
-        print "\t-current distance:", current_distance
-        cv2.imwrite(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg", img)
+            print "\t-current distance:", current_distance
+            cv2.imwrite(new_path + "/face_length_" + str(length) + "x" + str(t) + ".jpg", img)
     
-    print "total time:", time() - timepre, "seconds"
+    print "total time:", time.time() - timepre, "seconds"
+    print "saved to:" + new_path
         
 
 
@@ -352,7 +367,7 @@ if __name__ == "__main__":
         #     print "Wrong path to database provided / folder doesn't exist."
         #     sys.exit()
 
-        size = 700
+        size = 800
 
         computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 

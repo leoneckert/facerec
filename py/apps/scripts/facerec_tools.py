@@ -122,7 +122,12 @@ if __name__ == "__main__":
     print opts
     print opts["build_model"]
 
+    if opts["build_model"] is not None:
+        if opts["build_model"] is "Eigenfaces" or opts["build_model"] is "Fisherfaces":
+            model_type = opts["build_model"]
+            print "[+] Buidling a", model_type, "model."
 
+        # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

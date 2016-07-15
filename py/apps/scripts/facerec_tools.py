@@ -131,7 +131,7 @@ if __name__ == "__main__":
             output_path = opts["output"]
             input_path = opts["input"]
 
-            num_components = opts["num_components"]
+            num_components = opts["components"]
             classifier_neigbours = opts["classifier_neigbours"]
 
             if not os.path.isdir(input_path):

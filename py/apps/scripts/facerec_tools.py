@@ -127,7 +127,7 @@ if __name__ == "__main__":
             
             model_type = opts["build_model"]
             output_path = opts["output"]
-            if not os.isdir(output_path):
+            if not os.path.isdir(output_path):
                 "[+] Creating directories:", output_path
                 os.makedirs(output_path)
 

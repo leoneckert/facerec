@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
 
             #this needs to be resolved (getting the actual dimension of the images and add warning that all images need to have the same dimensions)
-            width = opts["widht"]
+            width = opts["width"]
             height = opts["height"]
 
             if output_path.endswith(".pkl"):

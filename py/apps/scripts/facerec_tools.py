@@ -162,13 +162,12 @@ if __name__ == "__main__":
             print '\toutput_path:', output_path
             print '\tinput_path:', input_path
 
-            print '\tcomponents', num_components
-            print '\tclassifier_neigbours', classifier_neigbours
-            print '\tdimensions', width, "x", height
+            print '\tcomponents:', num_components
+            print '\tclassifier_neigbours:', classifier_neigbours
+            print '\tdimensions:', width, "x", height
 
 
-
-            # computeAndSaveModel(input_path, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
+            computeAndSaveModel(input_path, output_path, size=(width,height), model_type=model_type, num_components=num_components, classifier_neighbours = classifier_neigbours)
 
     # if len(sys.argv) > 1:
     #     path_to_database = sys.argv[1]

@@ -40,8 +40,6 @@ def print_progress(count, total=0, label="Progress:", _loadingbar_length = 40):
         
         num_bars = int(float(loadingbar_length)*(float(count)/float(total)))
 
-        # loadingbar = "|".rjust(3) +"="*num_bars+">"+   (  ("| |".rjust(loadingbar_length - num_bars + 3)) if (float(count)/float(total)) < 1 else ("|X|".rjust(loadingbar_length - num_bars + 3))      )
-        # the_x = '|' + '\x1b[%sm%s\x1b[0m' % ('0;32;40', 'X') + '|'
         the_x = '|X|'
         ran_color = str( 31 + int(random()*6))
         the_arrow = '\x1b[%sm%s\x1b[0m' % ('0;'+ran_color+';40', '>')
@@ -135,7 +133,6 @@ def showModel(model, colormap=None):
     """
     Opens Fisherfaces of a given model.
     """
-
     print "\n[+] Creating Fisherfaces for model:", model
     dimensions = getDimensionsOfModel(model)
     E = []
@@ -176,7 +173,6 @@ def predictImages(path_to_img_or_folder, model):
         im.show()
     elif os.path.isdir(path):
         for dirname, dirnames, filenames in os.walk(path):
-
             print "[+] predictions for images in", dirname
             for filename in filenames:
                 file_path = os.path.join(dirname, filename)
@@ -186,15 +182,12 @@ def predictImages(path_to_img_or_folder, model):
                 except:
                     print "error, maybe no image file?"
                     pass
-
     else:
         print "[-] error. are you sure the path goes either to an image or a folder containing images?"
 
 
-
-
 def make_rough_time_prediction(size, time_factor, length_interval):
-    # MAKE A ROUCH TIME PREDICTION
+    # MAKE A ROUGH TIME PREDICTION
 
     pixel_analysed = 0
     num_predictions = 0
@@ -228,7 +221,7 @@ def make_rough_time_prediction(size, time_factor, length_interval):
     print "predicted time:", pred_time_total, "seconds"
     print "\t\tor", pred_time_total/60.0, 'minutes'
     print "\t\tor", pred_time_total/60.0/60, 'hours'
-    print "\t\tor less"
+    print "\t\tor less (this duration prediction algorithm is outdated, times are now up to 50% of what's predicted"
 
 def predictOptimize(path_to_img_or_folder, model, size):
     # preparing OUTPUT location:
@@ -335,7 +328,6 @@ def predictOptimize(path_to_img_or_folder, model, size):
     print "total time:", time.time() - timepre, "seconds"
     print "saved to:" + new_path
         
-
 
 def reconstructFaceFromModel(path_to_input_image, model, save_path = None):
     im = Image.open(path_to_input_image)

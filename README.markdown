@@ -1,5 +1,50 @@
 # facerec #
 
+
+## Simplified new functions added by leoneckert ##
+
+
+
+* **(1) - Build a model (a model file) and save it.**
+    * Eigenface (works with one person or many)
+        * minimum folder structure: image_folder[person_folder_1[image_1, image_2]]*
+    * Fisherface (works with minimum two person)
+        * minimum folder structure: image_folder[person_folder_1[image_1, image_2],person_folder_2[image_1, image_2]]*
+        * *minimum folder structures to be confirmed
+    * ---> use: ```python facerec_tools.py -build_model Eigenface -i path/to/image_folder -o path/to/where/to/store/the/model.file [more options: -size 500x500 -num_components 0(0 gives best results)(...)?)]```
+
+* **(2) - Show and/or save the visual images of a model**
+	* With Fisherfaces, there will be one Fisherface per person.
+	* With Eigenfaces, depending on the component number, there will be many more
+	* ---> use: ```python facerec_tools.py -visual_model -i path/to/model.file -o path/to/output_folder [more options: -limit 5 -display]```
+	
+* **(3) - Make a prediction for (a particular) face(s)/image(s) and model**
+	* This ouputs distance(s) and name (taken from folder name of "person_folder" when creating the model)
+	* ---> use: ```python facerec_tools.py -predict -i path/to/image_or_folder -m path/to/model.file [more options: -range 1 (best guess or best of a number of guesses)]```
+	
+* **(4) - Reconstruct a specific face/image from a model. (not 'hallucinate')**
+	* works better with a large(ish) Eigenface model, becuase the more people's unique components are part of a model the better any face can be built from these components.
+	* ---> use: ```python facerec_tools.py -reconstruct -i path/to/image.file -m path/to/model.file -o path/to/output_folder [more options: -display]```
+   
+   
+* **(5) - Decrease prediction distance of noise aka Hallucinate**
+	* this algorithm starts with a blank image and continuesly draws random rectangles (of decreasing size) while making predictions of the images distance (this can loosely be though of as simliarty or the programs confidence that the image is close) to a articular face in the model
+    
+        
+
+* TODO: **'eternal mode'** for haluzination: after ran through all, it continues tio stay in a loop drawing small square, e.g. 0-2 or maybe 0-3 pixels on and on until manually stopped. 
+
+
+
+
+
+
+
+
+
+
+
+
 ## Overview ##
 
 This project implements a face recognition framework for Python with:

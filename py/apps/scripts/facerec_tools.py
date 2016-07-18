@@ -73,12 +73,12 @@ def read_images(path, sz=None):
 
 
 
-def computeAndSaveModel(path_to_database, path_for_model_output, size, model_type="Fisherface", num_components=0, classifier_neighbours=1):
+def computeAndSaveModel(path_to_database, path_for_model_output, size, model_type="Fisherfaces", num_components=0, classifier_neighbours=1):
     print "\n[+] Saving new model (confirmed below)."    
     [X,y,names] = read_images(path_to_database, sz=size)
-    if model_type == "Eigenface":
+    if model_type == "Eigenfaces":
         model = PredictableModel(PCA(num_components=num_components), NearestNeighbor(k=classifier_neighbours), dimensions=size, namesDict=names)
-    elif model_type == "Fisherface":
+    elif model_type == "Fisherfaces":
         model = PredictableModel(Fisherfaces(num_components=num_components), NearestNeighbor(k=classifier_neighbours), dimensions=size, namesDict=names)
     else:
         print "[-] specify the type of model you want to comput as either 'Fisherface' or 'Eigenface' in the computeAndSaveModel function."

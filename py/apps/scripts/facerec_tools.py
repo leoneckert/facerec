@@ -191,7 +191,6 @@ if __name__ == "__main__":
         # trevor_face = "../../../../facerec/data/tp_aligned_cropped/tiff/_B9A3986.JPG_frame_00000001_out.tiff"
         # reconstructFaceFromModel("/HTSLAM/input/Leon/face_dataset/ck_formatted/S011/S011-105.tiff", model)
 
-        # showModel(model, colormap=cm.gray)
 
 
 

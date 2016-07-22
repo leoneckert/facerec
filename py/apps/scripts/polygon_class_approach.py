@@ -1,19 +1,33 @@
 import cv2
+import sys, os
+import argparse
 import numpy as np
 # from random
 from random import random, choice
 from PIL import Image, ImageDraw
 
+sys.path.append("../..")
+from facerec.feature import Fisherfaces, PCA
+from facerec.classifier import NearestNeighbor
+from facerec.model import PredictableModel
+from facerec.serialization import save_model, load_model
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-m", "--model-path", required=False, default=None, help="Path to output file.")
+opts = vars(ap.parse_args())
+
 
 class  PolygonElement:
     """a polygon"""
     
-    def __init__(self, dimensions, black_and_white = True):
-        self.num_vertices = 3
+    def __init__(self, dimensions, index, black_and_white = True):
+        self.index = index
+        self.num_vertices = 6
         self.width = dimensions[0]
         self.height = dimensions[1]
         self.points = self.init_points()
-        self.alpha = int(random()*255)
+        # self.alpha = int(random()*255)
+        self.alpha = 90
         self.black_and_white = black_and_white
         self.color = self.init_color()
         self.active = False
@@ -65,7 +79,7 @@ class  PolygonElement:
     def apply_random_change_to_temp_canvas(self, canvas):
         self.currently_modified_config = self.get_config()
 
-        categories = ["points", "alpha", "color"]
+        categories = ["points", "color"]
         cat_to_change = choice(categories)
 
         if cat_to_change == "color":
@@ -74,14 +88,15 @@ class  PolygonElement:
             self.currently_modified_config["alpha"] = int(random()*255)
         elif cat_to_change == "points":
             ran_idx = int(random()*self.num_vertices)
-            self.currently_modified_config["points"][ran_idx] = self.init_vertex()
-
+            # self.currently_modified_config["points"][ran_idx] = self.init_vertex()
+            self.currently_modified_config["points"] = self.init_points()
+        # print "[+] Index", self.index, "Changing:", cat_to_change
         return self.draw_from_config(canvas, config=self.currently_modified_config, temp_test=True)
 
     def apply_modified_config(self):
-        print "Lets apply this",
+        # print "Lets apply this",
         c = self.currently_modified_config
-        print c
+        # print c
         self.num_vertices = c["num_vertices"]
         self.width = c["width"]
         self.height = c["height"]
@@ -99,41 +114,65 @@ class  PolygonElement:
 
 class ElementOrganizer:
     """organizer object"""
-    def __init__(self, canvas, num_elements = 10,  black_and_white = True):
+    def __init__(self, canvas,  model_path=None, num_elements = 10,  black_and_white = True):
         self.canvas = canvas
+        self.blank_canvas = canvas
         self.elements = self.init_elements(num_elements, black_and_white)
         self.num = num_elements
         self.distance = None
-        
+        self.model = load_model(model_path)
+        self.improve_count = 0
 
     def init_elements(self, num_elements, black_and_white):
         elems = list()
         for i in range(num_elements):
-            elems.append(  PolygonElement(self.canvas.size, black_and_white=black_and_white)  )       
+            elems.append(  PolygonElement(self.canvas.size, i, black_and_white=black_and_white)  )       
         return elems
 
     def prediction_placeholder(self, canvas):
-        return int(random()*20)
+        return int(random()*30)
+
+    def draw_all(self, modify_index=None):
+        base = self.blank_canvas
+        for i in range(self.num):
+            if i == modify_index:
+                base =  self.elements[i].apply_random_change_to_temp_canvas(base)
+            else:
+                base = self.elements[i].draw_from_config(base)
+        return base
+
 
     def progress_attempt(self):
         ran_elem_idx = int(random()*self.num)
 
         temp_canvas = self.canvas.copy()
 
-        temp_canvas = self.elements[ran_elem_idx].apply_random_change_to_temp_canvas(temp_canvas)
+        # temp_canvas = self.elements[ran_elem_idx].apply_random_change_to_temp_canvas(temp_canvas)
+        temp_canvas = self.draw_all(modify_index = ran_elem_idx)
+        # temp_canvas.show()
+        
+        # new_distance = self.prediction_placeholder(temp_canvas) 
+        
+        im = temp_canvas.convert("L")
+        img = np.asarray(im, dtype=np.uint8)
+        pred = self.model.predict(img)
+        
 
-        new_distance = self.prediction_placeholder(temp_canvas) 
+        new_distance = pred[1]['distances'][0]
+        # print new_distance, self.distance
 
         if self.distance == None or new_distance < self.distance:
-            # save temporary settings in element
+            self.improve_count += 1
+        #     # save temporary settings in element
             self.elements[ran_elem_idx].apply_modified_config()
-            # update main canvas
-            self.canvas = temp_canvas
-        #     # update main distance
-            print "old distance:", self.distance
+        #     # update main canvas
+            self.canvas = self.draw_all()
+        # #     # update main distance
+            # print "old distance:", self.distance
             self.distance = new_distance
-            print "new distance:", self.distance
-            self.canvas.show()
+            print "[+] Improvement "+str(self.improve_count)+" | New distance:", self.distance
+            # self.canvas.show()
+            self.canvas.save("out9/frame_"+str(self.improve_count)+".jpg")
         # else: 
         #     # reset temporary settings in element (not sure if even needed)
 
@@ -150,15 +189,20 @@ class ElementOrganizer:
     def run(self):
         while True:
             self.progress_attempt()
-
-
+        # self.draw_all()
 
 
 
 if __name__ == '__main__':
+    print opts
+    model_path = opts["model_path"]
+    if not os.path.isfile(model_path) or not model_path.endswith(".plk"):
+        print "[+] Not a valid model file:", output_path
+        print "[X] Exiting."
+        sys.exit()
 
-    width = 300
-    height = 300
+    width = 200
+    height = 200
 
     canvas = Image.new("RGBA", (width,height), (255,255,255,255))
 
@@ -173,7 +217,7 @@ if __name__ == '__main__':
     #     im = p2.draw(im)
     # im.show()
 
-    organizer = ElementOrganizer(canvas, num_elements = 2,  black_and_white = True)
+    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 100,  black_and_white = True)
     
     organizer.run()
 

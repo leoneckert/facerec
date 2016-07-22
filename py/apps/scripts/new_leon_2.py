@@ -353,29 +353,32 @@ def path_file_from(path_to_database):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
-        path_to_database = sys.argv[1]
+    # if len(sys.argv) > 1:
+    #     path_to_database = sys.argv[1]
         # if not os.path.isdir(path_to_database):
         #     print "Wrong path to database provided / folder doesn't exist."
         #     sys.exit()
 
-        size = 600
+        # size = 600
 
-        computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
+        # computeAndSaveModel(path_to_database, 'model.pkl', size=(size,size), model_type="Eigenface", num_components=0, classifier_neighbours = 1)
 
-        file_path = path_file_from(path_to_database)
+        # file_path = path_file_from(path_to_database)
 
-        model = loadModel('model.pkl')
+        # model = loadModel('model.pkl')
 
         # showModel(model, colormap=cm.gray)
 
         # predictImages(path_to_database, model)
-        predictOptimize(file_path, model, size)
+        # predictOptimize(file_path, model, size)
 
         # trevor_face = "../../../../facerec/data/tp_aligned_cropped/tiff/_B9A3986.JPG_frame_00000001_out.tiff"
         # reconstructFaceFromModel("/HTSLAM/input/Leon/face_dataset/ck_formatted/S011/S011-105.tiff", model)
 
-        # showModel(model, colormap=cm.gray)
+    model = loadModel('model.pkl')
+
+
+    showModel(model, colormap=cm.gray)
 
 
 

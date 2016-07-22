@@ -2,8 +2,9 @@ import cv2
 import sys, os
 import argparse
 import numpy as np
+import math
 # from random
-from random import random, choice
+from random import random, choice, sample
 from PIL import Image, ImageDraw
 
 sys.path.append("../..")
@@ -20,28 +21,49 @@ opts = vars(ap.parse_args())
 class  PolygonElement:
     """a polygon"""
     
-    def __init__(self, dimensions, index, black_and_white = True):
+    def __init__(self, dimensions, index, max_size=None, black_and_white = True):
         self.index = index
-        self.num_vertices = 6
+        self.num_vertices = 5
         self.width = dimensions[0]
         self.height = dimensions[1]
+        if max_size is None:
+            # this is assuming we always draw on a square canvas
+            self.max_size = dimensions[0]
+        else:
+            self.max_size = max_size
         self.points = self.init_points()
         # self.alpha = int(random()*255)
-        self.alpha = 90
+        self.alpha = 80
         self.black_and_white = black_and_white
         self.color = self.init_color()
         self.active = False
 
-        # self.config_backup_copy = self.get_config()
         self.currently_modified_config = None
 
-    def init_vertex(self):
-        return ( int(random()*self.width), int(random()*self.height) )
+    def distance(self, point1, point2):
+        return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
+
+
+    def init_vertex(self, ref_point):
+        # print ref_point
+        # new_vertex = ( int(random()*self.width), int(random()*self.height) )
+        if ref_point is not None:
+            new_vertex = ( ref_point[0] + int( (random()*2-1)*self.max_size  ) , ref_point[1] + int( (random()*2-1)*self.max_size ))
+            while new_vertex[0] > self.width or new_vertex[0] < 0 or new_vertex[1] > self.height or new_vertex[1] < 0:
+                new_vertex = ( ref_point[0] + int( (random()*2-1)*self.max_size  ) , ref_point[1] + int( (random()*2-1)*self.max_size ))
+        else:
+            new_vertex = ( int(random()*self.width), int(random()*self.height) )
+            # while self.distance(new_vertex, ref_point) > self.max_size:
+            #     new_vertex = ( int(random()*self.width), int(random()*self.height) )
+            # print "new_vertex", new_vertex, "ref_points", ref_point, "distance", self.distance(new_vertex, ref_point)
+        return new_vertex
 
     def init_points(self):
         points = list()
+        ref_points = None
         for i in range(self.num_vertices):
-            (x, y) = self.init_vertex()
+            (x, y) = self.init_vertex(ref_points)
+            if i == 0: ref_points = (x,y)
             points.append( (x,y) )
         return points
 
@@ -87,16 +109,19 @@ class  PolygonElement:
         elif cat_to_change == "alpha":
             self.currently_modified_config["alpha"] = int(random()*255)
         elif cat_to_change == "points":
-            ran_idx = int(random()*self.num_vertices)
-            # self.currently_modified_config["points"][ran_idx] = self.init_vertex()
+            ran_points = sample(range(self.num_vertices), 2)
+            ran_idx = ran_points[0]
+            ran_ref_idx = ran_points[1]
+            ran_ref = self.currently_modified_config["points"][ran_ref_idx]
+            # ran_idx = int(random()*self.num_vertices)
             self.currently_modified_config["points"] = self.init_points()
-        # print "[+] Index", self.index, "Changing:", cat_to_change
+            # self.currently_modified_config["points"][ran_idx] = self.init_vertex(ran_ref)
         return self.draw_from_config(canvas, config=self.currently_modified_config, temp_test=True)
 
     def apply_modified_config(self):
-        # print "Lets apply this",
+
         c = self.currently_modified_config
-        # print c
+
         self.num_vertices = c["num_vertices"]
         self.width = c["width"]
         self.height = c["height"]
@@ -106,8 +131,6 @@ class  PolygonElement:
         self.color = c["color"]
         self.active = True
 
-
-        # self.active = True
 
 
 
@@ -122,11 +145,17 @@ class ElementOrganizer:
         self.distance = None
         self.model = load_model(model_path)
         self.improve_count = 0
+        self.tries_since_last_improvement = 0
 
     def init_elements(self, num_elements, black_and_white):
         elems = list()
         for i in range(num_elements):
-            elems.append(  PolygonElement(self.canvas.size, i, black_and_white=black_and_white)  )       
+            # assuming square canvas again
+            maximum_size = int( self.canvas.size[0] - ((float(i)/num_elements)*self.canvas.size[0]) )
+            if maximum_size < 1: maximum_size = 1
+            print "[+] polygon with max size:", maximum_size
+            # maximum_size = 30
+            elems.append(  PolygonElement(self.canvas.size, i, max_size= maximum_size ,black_and_white=black_and_white)  )       
         return elems
 
     def prediction_placeholder(self, canvas):
@@ -170,10 +199,12 @@ class ElementOrganizer:
         # #     # update main distance
             # print "old distance:", self.distance
             self.distance = new_distance
-            print "[+] Improvement "+str(self.improve_count)+" | New distance:", self.distance
+            print "[+] Improvement "+str(self.improve_count)+" | New distance:", self.distance,"| tries taken:", self.tries_since_last_improvement
+            self.tries_since_last_improvement = 0
             # self.canvas.show()
-            self.canvas.save("out9/frame_"+str(self.improve_count)+".jpg")
-        # else: 
+            self.canvas.save("out13/frame_"+str(self.improve_count)+".jpg")
+        else: 
+            self.tries_since_last_improvement += 1
         #     # reset temporary settings in element (not sure if even needed)
 
 
@@ -201,8 +232,8 @@ if __name__ == '__main__':
         print "[X] Exiting."
         sys.exit()
 
-    width = 200
-    height = 200
+    width = 700
+    height = 700
 
     canvas = Image.new("RGBA", (width,height), (255,255,255,255))
 
@@ -217,7 +248,7 @@ if __name__ == '__main__':
     #     im = p2.draw(im)
     # im.show()
 
-    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 100,  black_and_white = True)
+    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 20000,  black_and_white = True)
     
     organizer.run()
 

@@ -17,11 +17,25 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--model-path", required=False, default=None, help="Path to output file.")
 opts = vars(ap.parse_args())
 
+def print_progress(count, total=0, label="Progress:", _loadingbar_length = 40):
+    '''
+    prints progress on the same line.
+    req: import sys
+    '''
+    to_print =  "\r" + label + str(count).rjust(len(str(count))+1)
+    sys.stdout.write(to_print)
+    sys.stdout.flush()
+
+def stop_print_progress():
+    # print ""
+    to_print =  "\r"
+    sys.stdout.write(to_print)
+    sys.stdout.flush()
 
 class  PolygonElement:
     """a polygon"""
     
-    def __init__(self, dimensions, index, max_size=None, black_and_white = True):
+    def __init__(self, dimensions, index, alpha=80, max_size=None, black_and_white = True):
         self.index = index
         self.num_vertices = 5
         self.width = dimensions[0]
@@ -33,7 +47,8 @@ class  PolygonElement:
             self.max_size = max_size
         self.points = self.init_points()
         # self.alpha = int(random()*255)
-        self.alpha = 80
+        # self.alpha = 40\
+        self.alpha = alpha
         self.black_and_white = black_and_white
         self.color = self.init_color()
         self.active = False
@@ -101,7 +116,7 @@ class  PolygonElement:
     def apply_random_change_to_temp_canvas(self, canvas):
         self.currently_modified_config = self.get_config()
 
-        categories = ["points", "color"]
+        categories = ["points", "color", "point"]
         cat_to_change = choice(categories)
 
         if cat_to_change == "color":
@@ -109,13 +124,14 @@ class  PolygonElement:
         elif cat_to_change == "alpha":
             self.currently_modified_config["alpha"] = int(random()*255)
         elif cat_to_change == "points":
+            self.currently_modified_config["points"] = self.init_points()
+        elif cat_to_change == "point":
             ran_points = sample(range(self.num_vertices), 2)
             ran_idx = ran_points[0]
             ran_ref_idx = ran_points[1]
             ran_ref = self.currently_modified_config["points"][ran_ref_idx]
-            # ran_idx = int(random()*self.num_vertices)
-            self.currently_modified_config["points"] = self.init_points()
-            # self.currently_modified_config["points"][ran_idx] = self.init_vertex(ran_ref)
+            self.currently_modified_config["points"][ran_idx] = self.init_vertex(ran_ref)
+
         return self.draw_from_config(canvas, config=self.currently_modified_config, temp_test=True)
 
     def apply_modified_config(self):
@@ -133,7 +149,8 @@ class  PolygonElement:
 
 
 
-
+def getDimensionsOfModel(model):
+     return model.dimensions
 
 class ElementOrganizer:
     """organizer object"""
@@ -146,6 +163,7 @@ class ElementOrganizer:
         self.model = load_model(model_path)
         self.improve_count = 0
         self.tries_since_last_improvement = 0
+        print getDimensionsOfModel(self.model)
 
     def init_elements(self, num_elements, black_and_white):
         elems = list()
@@ -153,9 +171,10 @@ class ElementOrganizer:
             # assuming square canvas again
             maximum_size = int( self.canvas.size[0] - ((float(i)/num_elements)*self.canvas.size[0]) )
             if maximum_size < 1: maximum_size = 1
-            print "[+] polygon with max size:", maximum_size
+            alpha = 20
+            print "[+] polygon with max size:", maximum_size, "alpha:", alpha
             # maximum_size = 30
-            elems.append(  PolygonElement(self.canvas.size, i, max_size= maximum_size ,black_and_white=black_and_white)  )       
+            elems.append(  PolygonElement(self.canvas.size, i, alpha=alpha, max_size= maximum_size ,black_and_white=black_and_white)  )       
         return elems
 
     def prediction_placeholder(self, canvas):
@@ -185,12 +204,21 @@ class ElementOrganizer:
         im = temp_canvas.convert("L")
         img = np.asarray(im, dtype=np.uint8)
         pred = self.model.predict(img)
-        
+        # print pred[1]['labels']
+        # print pred[1]['name']
+        valid = False
+        if pred[1]['name'] == 'Hito':
+        # if 2 in pred[1]['labels']:
+            # print pred[1]['name']
+            valid = True
+        else:
+            print "wrong subject"
 
         new_distance = pred[1]['distances'][0]
         # print new_distance, self.distance
-
-        if self.distance == None or new_distance < self.distance:
+        print_progress(self.tries_since_last_improvement, label="Testing modifications:")
+        if (valid and self.distance == None) or (valid and new_distance < self.distance):
+            stop_print_progress() 
             self.improve_count += 1
         #     # save temporary settings in element
             self.elements[ran_elem_idx].apply_modified_config()
@@ -202,7 +230,8 @@ class ElementOrganizer:
             print "[+] Improvement "+str(self.improve_count)+" | New distance:", self.distance,"| tries taken:", self.tries_since_last_improvement
             self.tries_since_last_improvement = 0
             # self.canvas.show()
-            self.canvas.save("out13/frame_"+str(self.improve_count)+".jpg")
+
+            self.canvas.save("/HTSLAM/output/Leon/polygon_eigenface_hallucination/2/frame_"+str(self.improve_count).zfill(7)+".jpg")
         else: 
             self.tries_since_last_improvement += 1
         #     # reset temporary settings in element (not sure if even needed)
@@ -224,6 +253,7 @@ class ElementOrganizer:
 
 
 
+
 if __name__ == '__main__':
     print opts
     model_path = opts["model_path"]
@@ -232,8 +262,11 @@ if __name__ == '__main__':
         print "[X] Exiting."
         sys.exit()
 
-    width = 700
-    height = 700
+    model = load_model(model_path)
+
+
+    width = getDimensionsOfModel(model)[0]
+    height = getDimensionsOfModel(model)[1]
 
     canvas = Image.new("RGBA", (width,height), (255,255,255,255))
 
@@ -248,7 +281,7 @@ if __name__ == '__main__':
     #     im = p2.draw(im)
     # im.show()
 
-    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 20000,  black_and_white = True)
+    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 50000,  black_and_white = True)
     
     organizer.run()
 

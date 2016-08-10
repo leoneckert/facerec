@@ -7,6 +7,9 @@ import math
 from random import random, choice, sample
 from PIL import Image, ImageDraw
 
+from datetime import datetime
+import time
+
 sys.path.append("../..")
 from facerec.feature import Fisherfaces, PCA
 from facerec.classifier import NearestNeighbor
@@ -27,7 +30,6 @@ def print_progress(count, total=0, label="Progress:", _loadingbar_length = 40):
     sys.stdout.flush()
 
 def stop_print_progress():
-    # print ""
     to_print =  "\r"
     sys.stdout.write(to_print)
     sys.stdout.flush()
@@ -190,7 +192,7 @@ class ElementOrganizer:
         return base
 
 
-    def progress_attempt(self):
+    def progress_attempt(self, outpath):
         ran_elem_idx = int(random()*self.num)
 
         temp_canvas = self.canvas.copy()
@@ -231,7 +233,8 @@ class ElementOrganizer:
             self.tries_since_last_improvement = 0
             # self.canvas.show()
 
-            self.canvas.save("/HTSLAM/output/Leon/polygon_eigenface_hallucination/2/frame_"+str(self.improve_count).zfill(7)+".jpg")
+            # self.canvas.save("/HTSLAM/output/Leon/polygon_eigenface_hallucination/7/frame_"+str(self.improve_count).zfill(7)+".jpg")
+            self.canvas.save( os.path.join(outpath, "frame_"+str(self.improve_count).zfill(7)+".jpg"))
         else: 
             self.tries_since_last_improvement += 1
         #     # reset temporary settings in element (not sure if even needed)
@@ -247,8 +250,17 @@ class ElementOrganizer:
     #     return base
 
     def run(self):
+        today = str(datetime.fromtimestamp(int(time.time())).strftime('%Y%m%d'))
+        out_path = '/HTSLAM/output/Leon/polygon_eigenface_hallucination/'+today+'/hallucinations_'+today+'_'
+        c = 0
+        new_path = out_path + str(c)
+        while os.path.isdir(new_path):
+            c += 1
+            new_path = out_path + str(c)
+        os.makedirs(new_path)
+        
         while True:
-            self.progress_attempt()
+            self.progress_attempt(outpath=new_path)
         # self.draw_all()
 
 
@@ -281,7 +293,7 @@ if __name__ == '__main__':
     #     im = p2.draw(im)
     # im.show()
 
-    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 50000,  black_and_white = True)
+    organizer = ElementOrganizer(canvas, model_path=model_path, num_elements = 100000,  black_and_white = True)
     
     organizer.run()
 
